@@ -1,0 +1,49 @@
+name: 'dockerfile-sentinel'
+description: 'Lint Dockerfiles and Compose files for security problems (root, secrets, unpinned images, privileged containers)'
+author: 'Louis Wright'
+branding: { icon: 'box', color: 'blue' }
+inputs:
+  targets: { description: 'Dockerfiles, compose files or directories (space-separated)', default: '.' }
+  fail-on: { description: 'critical | high | medium | low | info | none', default: 'high' }
+  config: { description: 'Path to JSON config file', default: '' }
+  sarif: { description: 'Write SARIF to this path', default: '' }
+  json: { description: 'Write JSON report to this path', default: '' }
+  job-summary: { description: 'Write the Markdown report to the job summary (true/false)', default: 'true' }
+  args: { description: 'Extra CLI arguments', default: '' }
+outputs:
+  markdown-file: { description: 'Path of the Markdown report', value: '${{ steps.run.outputs.markdown-file }}' }
+  exit-code: { description: 'Exit code of the scan (0 pass, 1 findings, 2 error)', value: '${{ steps.run.outputs.exit-code }}' }
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with: { node-version: '20' }
+    - id: run
+      shell: bash
+      env:
+        DS_TARGETS: ${{ inputs.targets }}
+        DS_FAIL_ON: ${{ inputs.fail-on }}
+        DS_CONFIG: ${{ inputs.config }}
+        DS_SARIF: ${{ inputs.sarif }}
+        DS_JSON: ${{ inputs.json }}
+        DS_JOB_SUMMARY: ${{ inputs.job-summary }}
+        DS_ARGS: ${{ inputs.args }}
+        DS_BIN: ${{ github.action_path }}/bin/dockerfile-sentinel.js
+      run: |
+        md="$RUNNER_TEMP/dockerfile-sentinel.md"
+        # shellcheck disable=SC2206
+        targets=($DS_TARGETS)
+        args=("${targets[@]}" --fail-on "$DS_FAIL_ON" --markdown "$md")
+
+        [ -n "$DS_CONFIG" ] && args+=(--config "$DS_CONFIG")
+        [ -n "$DS_SARIF" ] && args+=(--sarif "$DS_SARIF")
+        [ -n "$DS_JSON" ] && args+=(--json "$DS_JSON")
+        set +e
+        # shellcheck disable=SC2086
+        node "$DS_BIN" "${args[@]}" $DS_ARGS
+        code=$?
+        set -e
+        echo "markdown-file=$md" >> "$GITHUB_OUTPUT"
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        if [ "$DS_JOB_SUMMARY" = "true" ] && [ -f "$md" ]; then cat "$md" >> "$GITHUB_STEP_SUMMARY"; fi
+        exit $code

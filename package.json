@@ -1,0 +1,57 @@
+{
+  "name": "dockerfile-sentinel",
+  "version": "0.0.0",
+  "description": "Dockerfile and Docker Compose security linter: root users, unpinned or EOL base images, hardcoded secrets, curl | sh, disabled TLS/GPG checks, sensitive COPY, missing .dockerignore, privileged containers, docker.sock mounts, host namespaces and dangerous capabilities. Zero deps.",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dockerfile-sentinel": "bin/dockerfile-sentinel.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "action.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "docker",
+    "dockerfile",
+    "docker-compose",
+    "container-security",
+    "containerfile",
+    "linter",
+    "hadolint",
+    "devsecops",
+    "security",
+    "secrets",
+    "sarif",
+    "cli",
+    "github-action"
+  ],
+  "author": "Louis Wright <hello@louiswright.co.uk> (https://github.com/MrLouisWright)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrLouisWright/dockerfile-sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MrLouisWright/dockerfile-sentinel/issues"
+  },
+  "homepage": "https://github.com/MrLouisWright/dockerfile-sentinel#readme"
+}
