@@ -1,6 +1,6 @@
 {
   "name": "dockerfile-sentinel",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Dockerfile and Docker Compose security linter: root users, unpinned or EOL base images, hardcoded secrets, curl | sh, disabled TLS/GPG checks, sensitive COPY, missing .dockerignore, privileged containers, docker.sock mounts, host namespaces and dangerous capabilities. Zero deps.",
   "type": "module",
   "main": "./src/index.js",
