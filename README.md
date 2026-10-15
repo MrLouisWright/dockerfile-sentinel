@@ -1,5 +1,7 @@
 # dockerfile-sentinel
 
+[![npm version](https://img.shields.io/npm/v/dockerfile-sentinel.svg)](https://www.npmjs.com/package/dockerfile-sentinel) [![CI](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml) [![Node](https://img.shields.io/node/v/dockerfile-sentinel.svg)](https://nodejs.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > Security linter for Dockerfiles and Docker Compose files: root containers, baked-in secrets, curl | sh, unpinned and end-of-life base images, privileged services, Docker socket mounts and exposed databases.
 
 `dockerfile-sentinel` reads Dockerfiles, Containerfiles and Compose files and reports security problems with a line number and a fix. CLI, library and GitHub Action. Node.js 18+, **zero runtime dependencies**. Nothing is built or pulled; files are only parsed. Secrets are masked in every output.
