@@ -1,34 +1,7 @@
 {
   "name": "dockerfile-sentinel",
   "version": "1.0.0",
-  "description": "Dockerfile and Docker Compose security linter: root users, unpinned or EOL base images, hardcoded secrets, curl | sh, disabled TLS/GPG checks, sensitive COPY, missing .dockerignore, privileged containers, docker.sock mounts, host namespaces and dangerous capabilities. Zero deps.",
-  "type": "module",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "bin": {
-    "dockerfile-sentinel": "bin/dockerfile-sentinel.js"
-  },
-  "files": [
-    "src",
-    "bin",
-    "action.yml",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "scripts": {
-    "test": "node --test test/*.test.js"
-  },
+  "description": "Dockerfile and Docker Compose security linter: root users, unpinned or EOL base images, hardcoded secrets, curl | sh, disabled TLS/GPG checks, sensitive COPY, missing .dockerignore, privileged containers, docker.sock mounts, host namespaces and dangerous capabilities. hadolint-style RUN shell checks, BuildKit secret mounts, CIS Docker Benchmark IDs, hadolint inline ignores.",
   "keywords": [
     "docker",
     "dockerfile",
@@ -57,5 +30,53 @@
   "bugs": {
     "url": "https://github.com/MrLouisWright/dockerfile-sentinel/issues"
   },
-  "homepage": "https://mrlouiswright.github.io/dockerfile-sentinel/"
+  "homepage": "https://mrlouiswright.github.io/dockerfile-sentinel/",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./src/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./src/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dockerfile-sentinel": "bin/dockerfile-sentinel.js"
+  },
+  "files": [
+    "src",
+    "dist",
+    "bin",
+    "action.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "bundle-secret-guard": "^1.1.0"
+  }
 }

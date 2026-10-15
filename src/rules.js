@@ -21,6 +21,22 @@ export const RULES = {
   'pkg-cache-not-cleaned': { severity: 'info', title: 'Package manager cache left in the layer', group: 'hygiene' },
   'no-healthcheck': { severity: 'info', title: 'No HEALTHCHECK in final stage', group: 'hygiene' },
   'maintainer-deprecated': { severity: 'info', title: 'MAINTAINER is deprecated (use LABEL)', group: 'hygiene' },
+  'missing-pipefail': { severity: 'low', title: 'RUN with a pipe but no pipefail (hadolint DL4006)', group: 'shell' },
+  'semicolon-chain': { severity: 'info', title: 'Commands chained with ; (failures ignored)', group: 'shell' },
+  'cd-instead-of-workdir': { severity: 'info', title: 'cd in RUN instead of WORKDIR (DL3003)', group: 'shell' },
+  'apt-missing-yes': { severity: 'medium', title: 'apt-get install without -y (DL3014)', group: 'shell' },
+  'apt-no-install-recommends': { severity: 'low', title: 'apt-get install without --no-install-recommends (DL3015)', group: 'shell' },
+  'apt-unpinned': { severity: 'info', title: 'apt-get install without version pins (DL3008)', group: 'shell' },
+  'apt-cli': { severity: 'low', title: 'apt used instead of apt-get (DL3027)', group: 'shell' },
+  'apt-update-alone': { severity: 'medium', title: 'apt-get update without install in the same RUN', group: 'shell' },
+  'pip-no-cache-dir': { severity: 'low', title: 'pip install without --no-cache-dir (DL3042)', group: 'shell' },
+  'pip-unpinned': { severity: 'info', title: 'pip install without version pins (DL3013)', group: 'shell' },
+  'npm-install-not-ci': { severity: 'low', title: 'npm install instead of npm ci', group: 'shell' },
+  'unquoted-variable': { severity: 'medium', title: 'Unquoted variable in rm -rf (ShellCheck SC2086/SC2115)', group: 'shell' },
+  'useradd-no-log-init': { severity: 'low', title: 'useradd with a large UID and without -l (DL3046)', group: 'shell' },
+  'wget-and-curl': { severity: 'info', title: 'Both wget and curl used (DL4001)', group: 'shell' },
+  'secret-mount-persisted': { severity: 'high', title: 'BuildKit secret copied into the image layer', group: 'buildkit' },
+  'buildkit-syntax-missing': { severity: 'info', title: 'BuildKit features used without a # syntax= directive', group: 'buildkit' },
   'parse-error': { severity: 'medium', title: 'File could not be parsed', group: 'parse' },
   'compose-privileged': { severity: 'critical', title: 'Compose service runs privileged', group: 'compose' },
   'compose-docker-socket': { severity: 'critical', title: 'Docker socket mounted into a container', group: 'compose' },
@@ -32,3 +48,21 @@ export const RULES = {
   'compose-exposed-port': { severity: 'medium', title: 'Database/admin port published on all interfaces', group: 'compose' },
   'compose-image-latest': { severity: 'low', title: 'Service image uses :latest or no tag', group: 'compose' },
 };
+
+/** CIS Docker Benchmark (v1.6) recommendation for each rule. */
+export const CIS = {
+  'run-as-root': '4.1', 'base-image-latest': '4.2', 'base-image-unpinned': '4.2', 'eol-base-image': '4.2', 'ssh-server': '4.3', 'sudo-usage': '4.1',
+  'no-healthcheck': '4.6', 'apt-update-alone': '4.7', 'add-instead-of-copy': '4.9', 'add-remote-url': '4.9', 'hardcoded-secret': '4.10', 'secret-in-env': '4.10',
+  'secret-in-arg': '4.10', 'copy-sensitive-file': '4.10', 'secret-mount-persisted': '4.10', 'gpg-check-disabled': '4.5', 'curl-pipe-shell': '4.11', 'apt-unpinned': '4.11', 'pip-unpinned': '4.11',
+  'compose-privileged': '5.5', 'compose-docker-socket': '5.32', 'compose-host-namespace': '5.10', 'compose-dangerous-cap': '5.4', 'compose-security-opt': '5.2',
+  'compose-sensitive-mount': '5.6', 'compose-exposed-port': '5.14', 'compose-secret-env': '4.10', 'compose-image-latest': '4.2',
+};
+/** hadolint / ShellCheck codes that correspond to a rule (so "# hadolint ignore=DL3008" works). */
+export const HADOLINT = {
+  'base-image-latest': ['DL3006', 'DL3007'], 'run-as-root': ['DL3002'], 'sudo-usage': ['DL3004'], 'add-instead-of-copy': ['DL3020'], 'add-remote-url': ['DL3020'],
+  'maintainer-deprecated': ['DL4000'], 'missing-pipefail': ['DL4006'], 'cd-instead-of-workdir': ['DL3003'], 'apt-missing-yes': ['DL3014'], 'apt-no-install-recommends': ['DL3015'],
+  'apt-unpinned': ['DL3008'], 'apt-cli': ['DL3027'], 'pip-no-cache-dir': ['DL3042'], 'pip-unpinned': ['DL3013'], 'useradd-no-log-init': ['DL3046'], 'wget-and-curl': ['DL4001'],
+  'pkg-cache-not-cleaned': ['DL3009', 'DL3019'], 'unquoted-variable': ['SC2086', 'SC2115'], 'curl-pipe-shell': ['DL4006'], 'ssh-server': ['DL3011'],
+};
+for (const [id, c] of Object.entries(CIS)) if (RULES[id]) RULES[id].cis = c;
+for (const [id, h] of Object.entries(HADOLINT)) if (RULES[id]) RULES[id].hadolint = h;

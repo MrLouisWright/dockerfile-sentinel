@@ -7,6 +7,9 @@ import { lintCompose } from './compose.js';
 import { findSecret, SECRET_PATTERNS } from './secrets.js';
 import { parseYaml } from './yaml.js';
 
+export { inlineIgnores } from './dockerfile.js';
+export { shellChecks, splitCommands } from './shell.js';
+export { CIS, HADOLINT } from './rules.js';
 export { parseDockerfile, lintDockerfile, lintCompose, findSecret, SECRET_PATTERNS, parseYaml, EOL, RULES, exceeds, exitCode, formatText, formatJson, formatSarif, formatMarkdown, SEVERITIES, ConfigError };
 export const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 export const TOOL = { name: 'dockerfile-sentinel', version: VERSION, rules: RULES, title: 'dockerfile-sentinel', emoji: '🐳', defaultFailOn: 'high' };

@@ -134,7 +134,7 @@ export function formatSarif(r, tool) {
   return JSON.stringify({
     $schema: 'https://json.schemastore.org/sarif-2.1.0.json', version: '2.1.0',
     runs: [{
-      tool: { driver: { name: tool.name, version: tool.version, informationUri: uri, rules: ids.map((id) => ({ id, name: id.replace(/(^|-)(\w)/g, (_, __, ch) => ch.toUpperCase()), shortDescription: { text: rules[id].title }, helpUri: `${uri}#rules`, defaultConfiguration: { level: LEVEL[rules[id].severity] }, properties: { tags: ['security', rules[id].group || tool.name], 'security-severity': SCORE[rules[id].severity] } })) } },
+      tool: { driver: { name: tool.name, version: tool.version, informationUri: uri, rules: ids.map((id) => ({ id, name: id.replace(/(^|-)(\w)/g, (_, __, ch) => ch.toUpperCase()), shortDescription: { text: rules[id].title }, helpUri: `${uri}#rules`, defaultConfiguration: { level: LEVEL[rules[id].severity] }, properties: { tags: ['security', rules[id].group || tool.name, ...(rules[id].cis ? [`CIS-Docker-${rules[id].cis}`] : []), ...(rules[id].hadolint || [])], 'security-severity': SCORE[rules[id].severity] } })) } },
       results: r.findings.map((f) => {
         const file = f.file || (isFileish(f.target) ? f.target : undefined);
         const physical = file ? { artifactLocation: { uri: String(file).replace(/\\/g, '/').replace(/^\.\//, '') }, ...(f.line ? { region: { startLine: f.line } } : {}) } : { artifactLocation: { uri: String(f.target) } };

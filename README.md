@@ -1,10 +1,10 @@
 # dockerfile-sentinel
 
-[![npm version](https://img.shields.io/npm/v/dockerfile-sentinel.svg)](https://www.npmjs.com/package/dockerfile-sentinel) [![CI](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml) [![Node](https://img.shields.io/node/v/dockerfile-sentinel.svg)](https://nodejs.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/dockerfile-sentinel.svg)](https://www.npmjs.com/package/dockerfile-sentinel) [![CI](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml) [![Node](https://img.shields.io/node/v/dockerfile-sentinel.svg)](https://nodejs.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![provenance](https://img.shields.io/badge/npm-provenance-blue)](https://docs.npmjs.com/generating-provenance-statements)
 
 > Security linter for Dockerfiles and Docker Compose files: root containers, baked-in secrets, curl | sh, unpinned and end-of-life base images, privileged services, Docker socket mounts and exposed databases.
 
-`dockerfile-sentinel` reads Dockerfiles, Containerfiles and Compose files and reports security problems with a line number and a fix. CLI, library and GitHub Action. Node.js 18+, **zero runtime dependencies**. Nothing is built or pulled; files are only parsed. Secrets are masked in every output.
+`dockerfile-sentinel` reads Dockerfiles, Containerfiles and Compose files and reports security problems with a line number and a fix. CLI, library and GitHub Action. Node.js 18+, one runtime dependency ([bundle-secret-guard](https://www.npmjs.com/package/bundle-secret-guard), for its shared credential patterns). Nothing is built or pulled; files are only parsed. Secrets are masked in every output.
 
 ## What it checks
 
@@ -130,6 +130,38 @@ Free to use under MIT, no attribution required. If dockerfile-sentinel helps you
 ```markdown
 [![Built with dockerfile-sentinel by Louis Wright](https://img.shields.io/badge/built%20with-dockerfile--sentinel-blue)](https://louiswright.co.uk)
 ```
+
+## RUN shell checks, BuildKit, CIS and hadolint compatibility
+
+`RUN` commands, including heredoc bodies, get ShellCheck/hadolint-style checks: pipes without `pipefail`, `;` chains, `cd` instead of `WORKDIR`, `apt-get install` without `-y` / `--no-install-recommends` / version pins, `apt-get update` on its own, `pip install` without `--no-cache-dir` or pins, `npm install` instead of `npm ci`, and unquoted variables in `rm -rf`. Each rule lists its hadolint code (`RULES[id].hadolint`).
+
+BuildKit-aware: `RUN --mount=type=secret` is the recommended fix for secrets, and copying the mounted secret into the image is flagged (`secret-mount-persisted`). Using `--mount` or heredocs without a `# syntax=docker/dockerfile:1` line is reported as info.
+
+Findings carry the matching **CIS Docker Benchmark** recommendation (`"cis": "4.1"` in JSON, `CIS-Docker-4.1` tags in SARIF).
+
+Existing hadolint comments keep working:
+
+```dockerfile
+# hadolint ignore=DL3008,DL3015
+RUN apt-get update && apt-get install -y curl
+# dockerfile-sentinel ignore=npm-install-not-ci
+RUN npm install
+```
+
+`# hadolint global ignore=DL3006` (or `# dockerfile-sentinel global ignore=<rule>`) applies to the whole file. Kubernetes and Helm manifests are out of scope.
+
+Hardcoded credentials are detected with the shared provider patterns from [bundle-secret-guard](https://www.npmjs.com/package/bundle-secret-guard).
+
+## Module formats and types
+
+Ships ESM (`import`) and a bundled CommonJS build (`require`), with TypeScript declarations generated from the source:
+
+```js
+import * as lib from 'dockerfile-sentinel';      // ESM
+const lib = require('dockerfile-sentinel');      // CommonJS
+```
+
+Tests live in [`test/`](test) and run on Node 18, 20 and 22 in [GitHub Actions](https://github.com/MrLouisWright/dockerfile-sentinel/actions/workflows/ci.yml), including a require+import check. Releases are published with `npm publish --provenance`.
 
 ## License
 

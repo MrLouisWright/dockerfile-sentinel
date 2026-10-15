@@ -1,4 +1,14 @@
 import { findSecret, isSecretAssignment, mask } from './secrets.js';
+import { shellChecks } from './shell.js';
+import { RULES } from './rules.js';
+
+/** Inline ignores: "# hadolint ignore=DL3008,SC2086", "# dockerfile-sentinel ignore=rule-id", and "global ignore=" forms. */
+export function inlineIgnores(text) {
+  const lines = String(text).split(/\r?\n/); const byLine = new Map(); const global = new Set();
+  lines.forEach((l, i) => { const m = /^\s*#\s*(hadolint|dockerfile-sentinel)\s+(global\s+)?ignore\s*=\s*([\w,\s-]+)/i.exec(l); if (!m) return; const ids = m[3].split(/[\s,]+/).filter(Boolean); if (m[2]) ids.forEach((x) => global.add(x)); else { let j = i + 1; while (j < lines.length && /^\s*(#.*)?$/.test(lines[j])) j++; byLine.set(j + 1, ids); } });
+  return { byLine, global };
+}
+const ruleIgnored = (rule, ids) => ids && ids.some((x) => x === rule || (RULES[rule]?.hadolint || []).includes(x.toUpperCase()));
 
 /** Parse a Dockerfile into instructions with line numbers (continuations, comments, heredocs, escape directive). */
 export function parseDockerfile(text) {
@@ -46,7 +56,10 @@ const SENSITIVE_COPY = /(^|\/)(\.env(\.[\w.-]+)?|id_rsa|id_ed25519|id_ecdsa|\.ss
  */
 export function lintDockerfile(text, file, ctx = {}) {
   const ins = parseDockerfile(text); const raw = [];
-  const add = (rule, line, message, extra = {}) => raw.push({ rule, file, line, location: `${file}:${line}`, message, ...extra });
+  let shell = 'sh'; let pipefail = false;
+  const directives = String(text).split(/\r?\n/).slice(0, 20); const syntax = directives.some((l) => /^#\s*syntax\s*=/i.test(l));
+  const ign = inlineIgnores(text); const startOf = new Map();
+  const add = (rule, line, message, extra = {}) => { const at = startOf.get(line) ?? line; if (ruleIgnored(rule, [...ign.global]) || ruleIgnored(rule, ign.byLine.get(at))) return; raw.push({ rule, file, line, location: `${file}:${line}`, message, ...(RULES[rule]?.cis ? { cis: RULES[rule].cis } : {}), ...extra }); };
   const stages = []; const argDefaults = {};
   for (const x of ins) {
     if (x.instruction === 'ARG' && !stages.length) { const [k, v] = (x.args.split('=')); argDefaults[k.trim()] = v?.trim(); }
@@ -100,8 +113,17 @@ export function lintDockerfile(text, file, ctx = {}) {
         if (!remote.length && !srcs.some((s) => /\.(tar(\.(gz|bz2|xz|zst))?|tgz|tbz2?|txz)$/i.test(s) || /^git@|\.git$/.test(s))) add('add-instead-of-copy', L, 'ADD for local files: use COPY (ADD auto-extracts archives and fetches URLs)');
       }
     }
+    if (x.instruction === 'SHELL') { const sh = jsonOrWords(x.args); shell = (sh[0] || 'sh').split('/').pop(); pipefail = sh.includes('pipefail'); }
     if (x.instruction === 'RUN') {
       const cmd = body;
+      const mounts = [...x.args.matchAll(/--mount=(\S+)/g)].map((m) => Object.fromEntries(m[1].split(',').map((kv) => kv.split('='))));
+      if ((mounts.length || x.heredoc) && !syntax) add('buildkit-syntax-missing', L, `RUN ${mounts.length ? '--mount' : 'heredoc'} needs BuildKit; add a syntax directive so older builders fail clearly`, { fix: 'Add "# syntax=docker/dockerfile:1" as the first line.' });
+      for (const mt of mounts.filter((m) => m.type === 'secret')) {
+        const target = mt.target || mt.dst || mt.destination || `/run/secrets/${mt.id || mt.source}`;
+        const esc = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`(cp|mv|install)\\s+[^;&|]*${esc}\\s+\\S|cat\\s+${esc}\\s*>{1,2}\\s*\\S|${esc}[^;&|]*\\|\\s*tee\\s`).test(cmd)) add('secret-mount-persisted', L, `RUN copies the BuildKit secret ${target} into the image filesystem`, { fix: 'Read the secret where it is used (e.g. --mount=type=secret,id=npmrc,target=/root/.npmrc) and never write it to a path that ends up in the layer.' });
+      }
+      for (const sc of shellChecks(x.heredoc ? x.heredoc : x.args, { shell, pipefail, heredoc: !!x.heredoc })) add(sc.rule, L, sc.message, { fix: sc.fix });
       if (/\b(curl|wget)\b[^|;&]*\|\s*(sudo\s+)?(ba|z|da|k)?sh\b|\b(curl|wget)\b[^|;&]*\|\s*(sudo\s+)?(python3?|perl|ruby|node)\b|\b(ba)?sh\s+(-c\s+)?["']?\$\((curl|wget)\b|\bbash\s+<\(\s*(curl|wget)/i.test(cmd)) add('curl-pipe-shell', L, 'Downloads a script and pipes it straight into an interpreter', { fix: 'Download to a file, verify a checksum or signature, then run it.' });
       if (/\bcurl\b[^\n;&|]*\s(-k|--insecure)\b|\bwget\b[^\n;&|]*--no-check-certificate|\bpip3?\b[^\n;&|]*--trusted-host|npm\s+config\s+set\s+strict-ssl\s+false|yarn\s+config\s+set\s+strict-ssl\s+false|git\s+config\s+[^\n;&|]*http\.sslverify\s+false|NODE_TLS_REJECT_UNAUTHORIZED=0|--disable-ssl|sslverify=(0|false)/i.test(cmd)) add('insecure-tls', L, 'Disables TLS certificate verification', { fix: 'Fix the CA trust store instead (install ca-certificates or add your corporate CA).' });
       if (/--allow-unauthenticated|--force-yes|--nogpgcheck|gpgcheck=0|--allow-untrusted|--no-verify-signatures|AllowInsecureRepositories|--insecure-skip-tls-verify/i.test(cmd)) add('gpg-check-disabled', L, 'Package signature verification disabled', { fix: 'Import the repository key and keep signature checks on.' });
