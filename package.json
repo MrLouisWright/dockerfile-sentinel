@@ -77,6 +77,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "bundle-secret-guard": "^1.1.0"
+    "bundle-secret-guard": "^1.1.2"
   }
 }
