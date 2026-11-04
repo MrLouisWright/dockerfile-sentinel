@@ -113,7 +113,7 @@ Inputs: `targets`, `fail-on`, `config`, `sarif`, `json`, `job-summary` (Markdown
 
 ## Requirements
 
-Node.js 18 or newer. No runtime dependencies.
+Node.js 18 or newer. One runtime dependency: [bundle-secret-guard](https://www.npmjs.com/package/bundle-secret-guard) (shared credential patterns).
 
 ## Support
 
